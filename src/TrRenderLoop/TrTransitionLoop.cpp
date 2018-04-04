@@ -7,9 +7,9 @@
 
 class TrMainMenuLoop;
 
-TrRenderLoop* TrTransitionLoop::update(const TrGame* game) {
+TrRenderLoop* TrTransitionLoop::update(TrGame* game) {
   if (m_waitTick && m_waitTick++ < m_maxWaitTick) {
-    return NULL;
+    return this;
   }
   if (m_waitTick >= m_maxWaitTick) {
     m_waitTick = 0;
@@ -19,12 +19,14 @@ TrRenderLoop* TrTransitionLoop::update(const TrGame* game) {
     if (m_curTick == m_maxTicks / 2) {
       m_waitTick++;
     }
-    return NULL;
+    return this;
   }
-  return m_target;
+
+  delete this;
+  return nullptr;
 }
 
-void TrTransitionLoop::render(const TrGame* game) {
+void TrTransitionLoop::render(TrGame* game) {
   int mx;
   int my;
 
@@ -79,7 +81,7 @@ void TrTransitionLoop::render(const TrGame* game) {
 
   SDL_SetRenderTarget(game->m_SDLRenderer, tempTexSmall);
 
-  SDL_RenderCopy(game->m_SDLRenderer, tempTexFull, NULL, &tmp);
+  SDL_RenderCopy(game->m_SDLRenderer, tempTexFull, nullptr, &tmp);
 
   float alpha = m_curTick;
   if (alpha >= m_maxTicks / 2) {
@@ -92,7 +94,7 @@ void TrTransitionLoop::render(const TrGame* game) {
 
   alpha *= 255.0;
 
-  SDL_SetRenderTarget(game->m_SDLRenderer, NULL);
+  SDL_SetRenderTarget(game->m_SDLRenderer, nullptr);
   SDL_SetTextureAlphaMod(tempTexSmall, (int)alpha);
 
   SDL_RenderCopy(game->m_SDLRenderer, tempTexSmall, &tmpFr, &screenQuad);

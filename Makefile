@@ -7,7 +7,7 @@
 COMPILE=clang++ 
 # FLAGS=-g -fno-omit-frame-pointer -fsanitize=address -std=gnu++11 -Winline -Wall -O1
 FLAGS=-std=gnu++11 -Winline -Wall -O3
-LINK=-I/usr/local/include -L/usr/local/lib -lSDL2 -lSDL2_image -lSDL2_ttf
+LINK=-I/usr/local/include -L/usr/local/lib -lpthread -lSDL2 -lSDL2_image -lSDL2_ttf
 
 # clang-format --style=LLVM --sort-includes src/Utils.hpp 
 
@@ -28,8 +28,7 @@ format: $(FORMATTED_SOURCES)
 
 src/%pp.clean: src/%pp
 	clang-format --style=Google $< > $@
-	mv $@ $<
-	
+	diff $@ $<; if [ $$? -eq 1 ]; then mv $@ $<; else rm $@; fi;
 
 # Main target
 $(EXEC): $(OBJECTS)

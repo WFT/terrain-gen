@@ -15,16 +15,30 @@ class TrTransitionLoop : public TrRenderLoop {
   int m_curTick = 0;
   int m_maxWaitTick = 20;
   int m_waitTick = 0;
+  bool m_deleteSource;
+  TrTransitionLoop(TrGame* game, TrRenderLoop* source, TrRenderLoop* target,
+                   bool deleteSource)
+      : m_target(target), m_source(source), m_deleteSource(deleteSource){};
 
  public:
-  TrTransitionLoop(const TrGame* game) : m_target(NULL), m_source(NULL) {}
-  virtual ~TrTransitionLoop(){};
+  virtual ~TrTransitionLoop() {
+    if (m_deleteSource) delete m_source;
+  };
 
-  virtual TrRenderLoop* update(const TrGame* game);
-  virtual void render(const TrGame* game);
-  void setTarget(TrRenderLoop* target) { m_target = target; }
+  static TrTransitionLoop* makePushLoop(TrGame* game, TrRenderLoop* source,
+                                        TrRenderLoop* target) {
+    return new TrTransitionLoop(game, source, target, false);
+  }
 
-  // TODO: setup setSource to store a texture with the source's data
-  // 	   instead of the entire source itself.
-  void setSource(TrRenderLoop* source) { m_source = source; }
+  static TrTransitionLoop* makePopLoop(TrGame* game, TrRenderLoop* source,
+                                       TrRenderLoop* target) {
+    return new TrTransitionLoop(game, source, target, true);
+  }
+
+  virtual TrRenderLoop* update(TrGame* game);
+  virtual void render(TrGame* game);
+  inline void setTarget(TrRenderLoop* target) { m_target = target; }
+  inline void setSource(TrRenderLoop* source) { m_source = source; }
+
+  // TODO: make a stack of TrRenderLoops inside of TrGame
 };

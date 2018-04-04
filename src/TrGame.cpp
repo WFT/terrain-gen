@@ -1,7 +1,15 @@
 
 #include "TrGame.hpp"
+#include "TrData/TrData.hpp"
+#include "TrRenderLoop/TrGameLoop.hpp"
+#include "TrRenderLoop/TrMainMenuLoop.hpp"
+#include "TrRenderLoop/TrRenderLoop.hpp"
 
 TrGame::TrGame() {
+  TrData data = TrData::getInstance();
+  m_gameStateTransition = nullptr;
+  // exit(0);
+
   // Initialize
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
     printf("SDL could not initialize - SDL Error: %s\n", SDL_GetError());
@@ -12,14 +20,14 @@ TrGame::TrGame() {
   m_SDLWindow = SDL_CreateWindow("test_driving", SDL_WINDOWPOS_UNDEFINED,
                                  SDL_WINDOWPOS_UNDEFINED, sz(K_DISPLAY_SIZE_X),
                                  sz(K_DISPLAY_SIZE_Y), SDL_WINDOW_SHOWN);
-  if (m_SDLWindow == NULL) {
+  if (m_SDLWindow == nullptr) {
     printf("Window could not be created - SDL Error: %s\n", SDL_GetError());
     exit(1);
   }
 
   // Create renderer for window
   m_SDLRenderer = SDL_CreateRenderer(m_SDLWindow, -1, SDL_RENDERER_ACCELERATED);
-  if (m_SDLRenderer == NULL) {
+  if (m_SDLRenderer == nullptr) {
     printf("Renderer could not be created - SDL Error: %s\n", SDL_GetError());
     exit(1);
   }
@@ -28,6 +36,14 @@ TrGame::TrGame() {
 
   if (TTF_Init() == -1) {
     printf("TTF_Init: %s\n", TTF_GetError());
+    exit(2);
+  }
+
+  // Initialize PNG loading
+  int imgFlags = IMG_INIT_PNG;
+  if (!(IMG_Init(imgFlags) & imgFlags)) {
+    printf("SDL_image could not initialize! SDL_image Error: %s\n",
+           IMG_GetError());
     exit(2);
   }
 
@@ -63,20 +79,43 @@ TrGame::TrGame() {
   if (!m_font) {
     printf("TTF_OpenFont: %s\n", TTF_GetError());
     // handle error
+    exit(2);
+  }
+
+  m_menuFont = TTF_OpenFont("anirb.ttf", 14);
+  if (!m_menuFont) {
+    printf("TTF_OpenFont: %s\n", TTF_GetError());
+    // handle error
+    exit(2);
   }
 
   // setup game loop
-  // m_gameState = new TrGameLoop(this);
-  m_gameState = new TrMainMenuLoop(this);
+  m_gameStateStack.push_back(new TrMainMenuLoop(this));
 }
 
 TrGame::~TrGame() {
   delete m_map;
 
-  TTF_Quit();
   SDL_DestroyTexture(m_mapTexture);
   SDL_DestroyRenderer(m_SDLRenderer);
   SDL_DestroyWindow(m_SDLWindow);
+
+  if (m_font) {
+    TTF_CloseFont(m_font);
+  }
+  if (m_menuFont) {
+    TTF_CloseFont(m_menuFont);
+  }
+  while (m_gameStateStack.size()) {
+    delete m_gameStateStack.back();
+    m_gameStateStack.pop_back();
+  }
+
+  if (m_gameStateTransition) {
+    delete m_gameStateTransition;
+  }
+
+  TTF_Quit();
   SDL_Quit();
 }
 
@@ -118,22 +157,22 @@ void TrGame::run() {
       handleKey(*it);
     }
 
-    SDL_UpdateTexture(m_mapTexture, NULL, m_map->m_color->m_data,
+    SDL_UpdateTexture(m_mapTexture, nullptr, m_map->m_color->m_data,
                       K_MAP_SIZE_X * sizeof(uint32_t));
 
     // clear screen
     SDL_SetRenderDrawColor(m_SDLRenderer, 0x00, 0x00, 0x00, 0xFF);
     SDL_RenderClear(m_SDLRenderer);
 
-    // TODO: fix memory leak from not deleting old game states
-    // Alternatively, place them somewhere so you can more easily keep track of
-    // them
-    if (m_gameState) {
-      TrRenderLoop* loop = m_gameState->update(this);
-      if (loop) {
-        m_gameState = loop;
+    if (m_gameStateTransition) {
+      m_gameStateTransition->render(this);
+      TrRenderLoop* loop = m_gameStateTransition->update(this);
+      if (!loop) {
+        m_gameStateTransition = nullptr;
       }
-      m_gameState->render(this);
+    } else {
+      m_gameStateStack.back()->render(this);
+      TrRenderLoop* loop = m_gameStateStack.back()->update(this);
     }
 
     // update screen
@@ -163,6 +202,16 @@ void TrGame::run() {
 }
 
 void TrGame::handleInput() {
+  m_keysDownPrev.empty();
+  m_buttonsDownPrev.empty();
+  m_keysDownPrev = m_keysDown;
+  m_buttonsDownPrev = m_buttonsDown;
+  // for (auto it = m_keysDown.begin(); it != m_keysDown.end(); it++) {
+  //   m_keysDownPrev.insert(*it);
+  // }
+  // for (auto it = m_buttonsDown.begin(); it != m_buttonsDown.end(); it++) {
+  //   m_buttonsDownPrev.insert(*it);
+  // }
   while (SDL_PollEvent(&m_SDLEvent) != 0) {
     if (m_SDLEvent.type == SDL_QUIT) {
       m_quit = true;
@@ -175,17 +224,8 @@ void TrGame::handleInput() {
     } else if (m_SDLEvent.type == SDL_MOUSEBUTTONUP) {
       m_buttonsDown.erase(m_SDLEvent.button.button);
     } else if (m_SDLEvent.type == SDL_MOUSEMOTION) {
-      if (m_buttonsDown.count(SDL_BUTTON_LEFT) &&
-          m_SDLEvent.motion.x < sz(K_DISPLAY_SIZE_X)) {
-        m_mouseX = m_SDLEvent.motion.x / c_pixelSize;
-        m_mouseY = m_SDLEvent.motion.y / c_pixelSize;
-      }
-
-      if (m_buttonsDown.count(SDL_BUTTON_RIGHT) &&
-          m_SDLEvent.motion.x < sz(K_DISPLAY_SIZE_Y)) {
-        m_mouseX = m_SDLEvent.motion.x / c_pixelSize;
-        m_mouseY = m_SDLEvent.motion.y / c_pixelSize;
-      }
+      m_mouseX = m_SDLEvent.motion.x / c_pixelSize;
+      m_mouseY = m_SDLEvent.motion.y / c_pixelSize;
     }
   }
 }

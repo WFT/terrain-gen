@@ -41,9 +41,8 @@ TrMap::TrMap(int rows, int cols)
 
   for (int i = 0; i < m_rows; i++) {
     for (int j = 0; j < m_cols; j++) {
-      m_height->at(i, j) -= 0.5;
-      m_height->at(i, j) -= 0.5;
-      m_height->at(i, j) *= 1.5;
+      m_height->at(i, j) -= 1.0;
+      m_height->at(i, j) *= 1.2;
 
       m_height->at(i, j) =
           m_height->at(i, j) * pow(fabs(m_height->at(i, j)), 0.8);
@@ -58,7 +57,29 @@ TrMap::TrMap(int rows, int cols)
     }
   }
 
+  m_height->update(this);
+
+  float water_height = 0.45;
+  for (int i = 0; i < m_rows; i++) {
+    for (int j = 0; j < m_cols; j++) {
+      if (m_height->at(i, j) <= water_height) {
+        m_water->at(i, j) = water_height - m_height->at(i, j) + 0.001;
+      }
+    }
+  }
+
+  m_normal->update(this);
   m_color->update(this);
+}
+
+TrMap::~TrMap() {
+  delete m_color;
+  delete m_height;
+  delete m_moisture;
+  delete m_normal;
+  delete m_vegetation;
+  delete m_water;
+  delete m_wind;
 }
 
 void TrMap::update(set<int> keysDown) {
@@ -143,6 +164,19 @@ void TrMap::update(set<int> keysDown) {
         // Save the map: color and heightmap
         this->saveMap();
         break;
+      case SDLK_t:
+        m_color->m_hour += 0.06;
+        if (m_color->m_hour > 24) {
+          m_color->m_hour -= 24;
+          m_color->m_month += 1;
+        }
+        if (m_color->m_month > 12) {
+          m_color->m_month -= 12;
+        }
+
+        // printf("%f, %d\n", m_color->m_hour, m_color->m_month);
+        m_color->updateLightAngle();
+        m_color->update(this);
     }
   }
 }

@@ -23,15 +23,14 @@
 #include <random>
 #include <vector>
 
+#include "../TrGame.hpp"
 #include "../TrMap/TrMap.hpp"
-
-class TrGame;
 
 class TrRenderLoop {
  public:
   TrRenderLoop(){};
   virtual ~TrRenderLoop(){};
 
-  virtual TrRenderLoop* update(const TrGame* game) { return NULL; };
-  virtual void render(const TrGame* game){};
+  inline virtual TrRenderLoop* update(TrGame* game) { return this; };
+  inline virtual void render(TrGame* game){};
 };

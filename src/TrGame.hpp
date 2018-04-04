@@ -14,12 +14,18 @@
 #include <unistd.h>
 #include <iostream>
 #include <iostream>
+#include <iterator>
+#include <list>
 #include <random>
 #include <vector>
 
 #include "TrMap/TrMap.hpp"
-#include "TrRenderLoop/TrGameLoop.hpp"
-#include "TrRenderLoop/TrMainMenuLoop.hpp"
+
+using namespace std;
+
+class TrGameLoop;
+class TrMainMenuLoop;
+class TrRenderLoop;
 
 class TrGame {
  public:
@@ -32,7 +38,9 @@ class TrGame {
   bool m_quit = false;
 
   set<int> m_keysDown;
+  set<int> m_keysDownPrev;
   set<char> m_buttonsDown;
+  set<char> m_buttonsDownPrev;
   int m_mouseX;
   int m_mouseY;
 
@@ -40,6 +48,7 @@ class TrGame {
   SDL_Texture* m_mapTexture;
 
   TTF_Font* m_font;
+  TTF_Font* m_menuFont;
 
   // TrMap* m_terrain;
 
@@ -51,7 +60,8 @@ class TrGame {
 
   int m_speed = 1;
 
-  TrRenderLoop* m_gameState;
+  TrRenderLoop* m_gameStateTransition;
+  list<TrRenderLoop*> m_gameStateStack;
 
   // initialize random number generator for rain
   std::random_device m_yrandDevice;
