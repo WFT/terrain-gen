@@ -14,18 +14,23 @@ using namespace std;
  * @brief holds information about a intended destination to go to
  * @details urgency is on the scale of 0 to 7
  */
-/*
+
 struct tr_target_t {
   SDL_Point m_loc;
   uint8_t urgency;
-  };*/
+};
+
+inline bool operator<(const tr_target_t& lhs, const tr_target_t& rhs)
+{
+  return lhs.urgency < rhs.urgency;
+}
 
 /**
  * @brief interface for all planning components
  */
 class TrPlanningComponent : public TrComponent {
  public:
-    //  set<tr_target_t> m_targets;
+  set<tr_target_t> m_targets;
 
   TrPlanningComponent() = default;
   ~TrPlanningComponent() override = default;
@@ -39,5 +44,7 @@ class TrPlanningComponent : public TrComponent {
 
 // TODO: something
 template<class C>
-void TrPlanningComponent::update(TrGame *game, C *entity) {}
+void TrPlanningComponent::update(TrGame *game, C *entity) {
+    
+}
 
