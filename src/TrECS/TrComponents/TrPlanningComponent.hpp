@@ -7,6 +7,7 @@
 #include <set>
 
 #include "../TrComponents.hpp"
+#include "../../Utils.hpp"
 
 using namespace std;
 
@@ -20,6 +21,10 @@ struct tr_target_t {
   uint8_t urgency;
 };
 
+inline bool operator==(const tr_target_t& lhs, const tr_target_t& rhs) {
+  return lhs.urgency == rhs.urgency && lhs.m_loc == rhs.m_loc;
+}
+
 inline bool operator<(const tr_target_t& lhs, const tr_target_t& rhs)
 {
   return lhs.urgency < rhs.urgency;
@@ -30,8 +35,6 @@ inline bool operator<(const tr_target_t& lhs, const tr_target_t& rhs)
  */
 class TrPlanningComponent : public TrComponent {
  public:
-  set<tr_target_t> m_targets;
-
   TrPlanningComponent() = default;
   ~TrPlanningComponent() override = default;
 
@@ -40,11 +43,24 @@ class TrPlanningComponent : public TrComponent {
    */
   template<class C>
   void update(TrGame *game, C *entity);
+    
+  void addTarget(tr_target_t t);
+  void removeTarget(tr_target_t t);
+  // TODO: getCurrentTarget
+
+ private:
+  bool m_current_target_is_valid = false;
+  tr_target_t m_current_target;
+  set<tr_target_t> m_targets;
 };
 
-// TODO: something
 template<class C>
 void TrPlanningComponent::update(TrGame *game, C *entity) {
-    
+  // No need to update planning if the current target is still okay.
+  if (m_current_target_is_valid || m_targets.empty()) return;
+
+  // TODO: Remove current target once we've reached it.
+  m_current_target = *std::min_element(m_targets.begin(), m_targets.end());
+  m_current_target_is_valid = true;
 }
 

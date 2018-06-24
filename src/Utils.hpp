@@ -160,3 +160,7 @@ inline SDL_Rect makeInsetRect(SDL_Rect rect, int left, int top, int right, int b
     return {rect.x + left, rect.y + top,
             rect.w - (left + right), rect.h - (top + bottom)};
 }
+
+inline bool operator==(const SDL_Point& lhs, const SDL_Point& rhs) {
+    return lhs.x == rhs.x && lhs.y == rhs.y;
+}
